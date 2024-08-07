@@ -1,6 +1,7 @@
 import pygame
 import sys
 import random
+import time
 
 pygame.init()
 
@@ -17,6 +18,10 @@ pygame.display.set_caption("Pong")
 
 font = pygame.font.Font(None, 74)
 
+# Load sound effects
+hit_sound = pygame.mixer.Sound("audio/hit.mp3")
+score_sound = pygame.mixer.Sound("audio/score.mp3")
+
 def home_screen():
     screen.fill(BLACK)
     title = font.render("Pong Game", True, WHITE)
@@ -29,8 +34,12 @@ def home_screen():
 
 def pause_game():
     paused = True
-    pause_text = font.render("Paused. Press P to Resume", True, WHITE)
-    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2))
+    line1 = font.render("Paused. Press ESC to Resume", True, WHITE)
+    line2 = font.render("Press Q to Quit to Home", True, WHITE)
+    
+    screen.fill(BLACK)  # Clear the screen before drawing the pause text
+    screen.blit(line1, (WIDTH // 2 - line1.get_width() // 2, HEIGHT // 2 - line1.get_height()))
+    screen.blit(line2, (WIDTH // 2 - line2.get_width() // 2, HEIGHT // 2 + 10))
     pygame.display.flip()
     
     while paused:
@@ -39,8 +48,10 @@ def pause_game():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
+                if event.key == pygame.K_ESCAPE:
                     paused = False
+                if event.key == pygame.K_q:
+                    return "home"
 
 def game_over(winner):
     screen.fill(BLACK)
@@ -69,6 +80,9 @@ def main(game_mode):
 
     score1, score2 = 0, 0
 
+    countdown = 0
+    ball_visible = True
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -77,8 +91,9 @@ def main(game_mode):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     main(game_mode)
-                if event.key == pygame.K_p:
-                    pause_game()
+                if event.key == pygame.K_ESCAPE:
+                    if pause_game() == "home":
+                        return
 
         keys = pygame.key.get_pressed()
 
@@ -94,15 +109,17 @@ def main(game_mode):
                 paddle2.y += PADDLE_SPEED
         else:
             if ball.centery < paddle2.centery:
-                paddle2.y -= PADDLE_SPEED - 3 
+                paddle2.y -= PADDLE_SPEED - 3.8 
             if ball.centery > paddle2.centery:
-                paddle2.y += PADDLE_SPEED - 3  
+                paddle2.y += PADDLE_SPEED - 3.8 
 
         paddle1.y = max(0, min(paddle1.y, HEIGHT - PADDLE_HEIGHT))
         paddle2.y = max(0, min(paddle2.y, HEIGHT - PADDLE_HEIGHT))
 
-        ball.x += ball_dx
-        ball.y += ball_dy
+        if countdown <= 0:
+            ball.x += ball_dx
+            ball.y += ball_dy
+            ball_visible = True
 
         if ball.top <= 0 or ball.bottom >= HEIGHT:
             ball_dy *= -1
@@ -110,15 +127,21 @@ def main(game_mode):
         if ball.colliderect(paddle1):
             ball_dx *= -1
             ball_dy = random.randint(-BALL_SPEED, BALL_SPEED)
+            hit_sound.play()  # Play hit sound
+
         if ball.colliderect(paddle2):
             ball_dx *= -1
             ball_dy = random.randint(-BALL_SPEED, BALL_SPEED)
+            hit_sound.play()  # Play hit sound
 
         if ball.left <= 0:
             score2 += 1
+            score_sound.play()  # Play score sound
             if score2 == 10:  # Example winning score
                 game_over("Player 2" if game_mode == "human" else "CPU")
                 main(game_mode)
+            countdown = random.uniform(3, 5) * 60  # Convert seconds to frames
+            ball_visible = False
             ball.x = WIDTH // 2 - BALL_SIZE // 2
             ball.y = HEIGHT // 2 - BALL_SIZE // 2
             ball_dx = -BALL_SPEED
@@ -126,9 +149,12 @@ def main(game_mode):
 
         if ball.right >= WIDTH:
             score1 += 1
+            score_sound.play()  # Play score sound
             if score1 == 10:  # Example winning score
                 game_over("Player 1")
                 main(game_mode)
+            countdown = random.uniform(3, 5) * 60  # Convert seconds to frames
+            ball_visible = False
             ball.x = WIDTH // 2 - BALL_SIZE // 2
             ball.y = HEIGHT // 2 - BALL_SIZE // 2
             ball_dx = BALL_SPEED
@@ -137,7 +163,8 @@ def main(game_mode):
         screen.fill(BLACK)
         pygame.draw.rect(screen, WHITE, paddle1)
         pygame.draw.rect(screen, WHITE, paddle2)
-        pygame.draw.ellipse(screen, WHITE, ball)
+        if ball_visible:
+            pygame.draw.ellipse(screen, WHITE, ball)
         pygame.draw.aaline(screen, WHITE, (WIDTH // 2, 0), (WIDTH // 2, HEIGHT))
 
         text1 = font.render(str(score1), True, WHITE)
@@ -156,21 +183,25 @@ def main(game_mode):
             screen.blit(player1_label, (100, HEIGHT - 60))
             screen.blit(player2_label, (WIDTH - 250, HEIGHT - 60))
 
+        if countdown > 0:
+            countdown -= 1
+
         pygame.display.flip()
         pygame.time.Clock().tick(60)
 
-home_screen()
-mode = None
+while True:
+    home_screen()
+    mode = None
 
-while mode is None:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_1:
-                mode = "cpu"
-            if event.key == pygame.K_2:
-                mode = "human"
+    while mode is None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    mode = "cpu"
+                if event.key == pygame.K_2:
+                    mode = "human"
 
-main(mode)
+    main(mode)
