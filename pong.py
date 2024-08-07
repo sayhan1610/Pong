@@ -1,5 +1,6 @@
 import pygame
 import sys
+import random
 
 pygame.init()
 
@@ -26,6 +27,39 @@ def home_screen():
     screen.blit(option2, (WIDTH // 2 - option2.get_width() // 2, HEIGHT // 2 + 100))
     pygame.display.flip()
 
+def pause_game():
+    paused = True
+    pause_text = font.render("Paused. Press P to Resume", True, WHITE)
+    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2))
+    pygame.display.flip()
+    
+    while paused:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    paused = False
+
+def game_over(winner):
+    screen.fill(BLACK)
+    game_over_text = font.render(f"Game Over! {winner} Wins!", True, WHITE)
+    restart_text = font.render("Press R to Restart", True, WHITE)
+    screen.blit(game_over_text, (WIDTH // 2 - game_over_text.get_width() // 2, HEIGHT // 2 - 50))
+    screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + 50))
+    pygame.display.flip()
+
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    waiting = False
+
 def main(game_mode):
     paddle1 = pygame.Rect(50, HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
     paddle2 = pygame.Rect(WIDTH - 50 - PADDLE_WIDTH, HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT)
@@ -40,6 +74,11 @@ def main(game_mode):
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    main(game_mode)
+                if event.key == pygame.K_p:
+                    pause_game()
 
         keys = pygame.key.get_pressed()
 
@@ -68,20 +107,32 @@ def main(game_mode):
         if ball.top <= 0 or ball.bottom >= HEIGHT:
             ball_dy *= -1
 
-        if ball.colliderect(paddle1) or ball.colliderect(paddle2):
+        if ball.colliderect(paddle1):
             ball_dx *= -1
+            ball_dy = random.randint(-BALL_SPEED, BALL_SPEED)
+        if ball.colliderect(paddle2):
+            ball_dx *= -1
+            ball_dy = random.randint(-BALL_SPEED, BALL_SPEED)
 
         if ball.left <= 0:
             score2 += 1
+            if score2 == 10:  # Example winning score
+                game_over("Player 2" if game_mode == "human" else "CPU")
+                main(game_mode)
             ball.x = WIDTH // 2 - BALL_SIZE // 2
             ball.y = HEIGHT // 2 - BALL_SIZE // 2
-            ball_dx *= -1
+            ball_dx = -BALL_SPEED
+            ball_dy = random.randint(-BALL_SPEED, BALL_SPEED)
 
         if ball.right >= WIDTH:
             score1 += 1
+            if score1 == 10:  # Example winning score
+                game_over("Player 1")
+                main(game_mode)
             ball.x = WIDTH // 2 - BALL_SIZE // 2
             ball.y = HEIGHT // 2 - BALL_SIZE // 2
-            ball_dx *= -1
+            ball_dx = BALL_SPEED
+            ball_dy = random.randint(-BALL_SPEED, BALL_SPEED)
 
         screen.fill(BLACK)
         pygame.draw.rect(screen, WHITE, paddle1)
@@ -104,7 +155,6 @@ def main(game_mode):
             player2_label = font.render("CPU", True, WHITE)
             screen.blit(player1_label, (100, HEIGHT - 60))
             screen.blit(player2_label, (WIDTH - 250, HEIGHT - 60))
-
 
         pygame.display.flip()
         pygame.time.Clock().tick(60)
