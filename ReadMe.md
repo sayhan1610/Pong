@@ -19,29 +19,7 @@ A classic Pong game implemented using Pygame. Play against the CPU or a friend i
 
 2. **Navigate to the Project Directory**
 
-   ```bash
-   cd pong
-   ```
-
-3. **Install Pygame**
-
-   Ensure you have Python installed, then install Pygame using pip:
-
-   ```bash
-   pip install pygame
-   ```
-
-4. **Add Audio Files**
-
-   Place your audio files in a folder named `audio` in the root directory of the project. The files should be named `hit.mp3` and `score.mp3`.
-
-## Running the Game
-
-To start the game, run the following command:
-
-```bash
-python pong.py
-```
+   To get started with the Paper Airplane Game, simply run the installation files provided.
 
 ## Controls
 
